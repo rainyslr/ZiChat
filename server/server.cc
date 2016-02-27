@@ -22,17 +22,55 @@ int sfp;
 void *communicate(void* para)
 {
 	int cur_socket = *(int*)para,ret_val = 0;
+	char buffer[1024]={0};  
+	int recbytes; 
 	cout_mutex.lock();
 	std::cout << "thread_id for socket " << cur_socket << "is:"
 		<< pthread_self() << std::endl;
 	cout_mutex.unlock();
-	if(write(cur_socket,"hello,welcome to my server \r\n",32) == -1)  
-	{  
-		PString("write fail!");
-		ret_val = -1;
+	// if(write(cur_socket,"hello,welcome to my server \r\n",32) == -1)  
+	// {  
+	// 	PString("first time write fail!");
+	// 	ret_val = -1;
 
-	}  
-	close(cur_socket); 
+	// } 
+	while(1)
+	{
+		ret_val = recbytes = read(cur_socket,buffer,1024);
+		if(ret_val == 0)
+		{
+			PString("client closed");
+			exit(0);
+		}
+		else if(ret_val == -1)  
+		{  
+			std::cout << "read data fail !" << std::endl;
+
+		}
+		else
+		{
+			buffer[recbytes]='\0';  
+			if(strcmp(buffer,"exit") == 0)
+			{
+				PString("receice a exit");
+				close(cur_socket); 
+				return NULL;
+			}
+
+			else{
+				PString(buffer);
+				if(write(cur_socket,buffer,recbytes + 1) == -1)  
+				{  
+					PString("echo write fail!");
+					ret_val = -1;
+
+				} 
+			}
+
+		}
+		
+	}
+
 	return NULL;
 }
 
@@ -74,7 +112,7 @@ int main()
 
 
 	struct sockaddr_in s_add;  
-	
+
 
 	std::cout << "Hello,welcome to server !" << std::endl;
 	sfp = socket(AF_INET, SOCK_STREAM, 0);
@@ -124,7 +162,7 @@ int main()
 
 		}	
 	}
-  
+
 	close(sfp);
 	return 0;  
 }  

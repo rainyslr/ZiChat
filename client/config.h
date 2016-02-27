@@ -1,0 +1,2 @@
+#define SERVER_PORT 8888
+#define SERVER_ADDR "101.204.190.105"

@@ -10,9 +10,11 @@
 #include <sys/shm.h>
 #include "config.h"
 #include <iostream>
+#include <sstream>
 #include <pthread.h>
 #include <string>
 #include "in-out.h"
+#include "packet.h"
 
 ThreadMutex cout_mutex; // 互斥信号量， 一次只有一个线程调用标准输出 
 int cfd; 
@@ -84,34 +86,28 @@ int main()
 		printf("thread WaitCommand creation failed \n");
 		exit(1);
 	}  
-	std::string str;
+	std::string str,name,password;
 	int ret_val;
 	while(1) 
 	{
 		if(_kbhit())
 		{
 			std::cin >> str ;
-			if(str.compare("exit")==0)
+			Cmd cur_cmd(str);
+			if(cur_cmd.m_cmd[0].compare("exit")==0)
 			{
 				// goto end;
 				exit(0);
 			}
-			else
+			else if(cur_cmd.m_cmd[0].compare("register")==0)
 			{
-				int len = str.size();
-				char buff[1024]={0}; 
-				memcpy(buff,str.c_str(),len);
-				buff[len] = 0;
-				PString(buff);
-
-				if(write(cfd,str.c_str(),str.size() + 1) == -1)  
+				UserInfo u1(cur_cmd.m_cmd[1],cur_cmd.m_cmd[2]);
+				Packet pkt(REGISTER_PKT,&u1);
+				if(SendPkt(cfd,pkt) == -1)  
 				{  
-					PString("write fail!");
-					close(cfd);
 					exit(-1);
 				}  
 				
-
 			}
 
 		}	

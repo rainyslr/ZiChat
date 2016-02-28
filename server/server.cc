@@ -12,6 +12,7 @@
 #include <iostream>
 #include <pthread.h>
 #include "in-out.h"
+#include "packet.h"
 
 
 #define BUFFER_SIZE 1024
@@ -36,11 +37,13 @@ void *communicate(void* para)
 	// } 
 	while(1)
 	{
+		memset(buffer,0,1024);
 		ret_val = recbytes = read(cur_socket,buffer,1024);
 		if(ret_val == 0)
 		{
 			PString("client closed");
-			exit(0);
+			close(cur_socket);
+			return NULL;
 		}
 		else if(ret_val == -1)  
 		{  
@@ -49,22 +52,36 @@ void *communicate(void* para)
 		}
 		else
 		{
-			buffer[recbytes]='\0';  
-			if(strcmp(buffer,"exit") == 0)
+			Packet* pkt_ptr = (Packet*)buffer;
+			int type = pkt_ptr->m_type;
+			switch(type)
 			{
-				PString("receice a exit");
-				close(cur_socket); 
-				return NULL;
-			}
+				case REGISTER_PKT:
+				{
+					PString("receice a REGISTER_PKT");
+					UserInfo* user_info = (UserInfo*) (buffer + HEADER_LEN);
+					PString(user_info->m_name);
+					PString(user_info->m_password);
+					break;
+				}
+				case CLIENT_EXIT_PKT:
+				{
+					PString("receice a exit pkt");
+					close(cur_socket); 
+					return NULL;
+				}
+				default:
+					{
+						PString(buffer);
+						if(write(cur_socket,buffer,recbytes + 1) == -1)  
+						{  
+							PString("echo write fail!");
+							ret_val = -1;
 
-			else{
-				PString(buffer);
-				if(write(cur_socket,buffer,recbytes + 1) == -1)  
-				{  
-					PString("echo write fail!");
-					ret_val = -1;
+						} 
+						break;
+					}
 
-				} 
 			}
 
 		}
@@ -98,7 +115,7 @@ void *WaitConnect(void* para)
 		if(ret != 0)
 		{
 			PString("communicate thread creation failed "); 
-			exit(1);
+			return NULL;
 		}  
 	}
 	return NULL;  

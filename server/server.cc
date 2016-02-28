@@ -11,6 +11,7 @@
 #include "config.h"
 #include <iostream>
 #include <pthread.h>
+#include <map>
 #include "in-out.h"
 #include "packet.h"
 
@@ -18,7 +19,37 @@
 #define BUFFER_SIZE 1024
 bool opened = true;
 ThreadMutex cout_mutex; // 互斥信号量， 一次只有一个线程调用标准输出 
+std::map<std::string,std::string> UserList;
 int sfp; 
+
+void print_userList()
+{
+	std::map<std::string, std::string>::iterator it = UserList.begin();
+	cout_mutex.lock();
+	std::cout << "user list is:" << std::endl;
+	for(;it != UserList.end();++ it)
+	{
+		std::cout << it->first << ":" <<it->second;
+	}
+	cout_mutex.unlock();
+}
+
+RegisterResultType Register(const std::string& name,const std::string& password)
+{
+	PString(name);
+	PString(password);
+	std::map<std::string, std::string>::iterator it = UserList.find(name);
+	if (it != UserList.end()) {
+		return USERNAME_CONFLICT;
+	}
+	UserList[name] = password;
+	return SUCCEED;
+}
+
+RegisterResultType Register(const UserInfo& info)
+{
+	return Register(info.m_name,info.m_password);
+}
 
 void *communicate(void* para)
 {
@@ -29,12 +60,6 @@ void *communicate(void* para)
 	std::cout << "thread_id for socket " << cur_socket << "is:"
 		<< pthread_self() << std::endl;
 	cout_mutex.unlock();
-	// if(write(cur_socket,"hello,welcome to my server \r\n",32) == -1)  
-	// {  
-	// 	PString("first time write fail!");
-	// 	ret_val = -1;
-
-	// } 
 	while(1)
 	{
 		memset(buffer,0,1024);
@@ -60,8 +85,14 @@ void *communicate(void* para)
 				{
 					PString("receice a REGISTER_PKT");
 					UserInfo* user_info = (UserInfo*) (buffer + HEADER_LEN);
-					PString(user_info->m_name);
-					PString(user_info->m_password);
+					RegisterResultType ret = Register(*user_info);
+					RegisterResult resu = {ret};
+					Packet pkt(REGISTER__RESULT_PKT,&resu);
+					RegisterResult* new_resu = (RegisterResult*)(pkt.m_buff);
+					if(SendPkt(cur_socket,pkt) == -1)  
+					{  
+						exit(-1);
+					}  
 					break;
 				}
 				case CLIENT_EXIT_PKT:
@@ -171,12 +202,17 @@ int main()
 	{
 		if(_kbhit())
 		{
-			char c  = getchar();
-			if(c == 'q')
+			std::string command;
+			std::cin >> command;
+			if(command.compare("exit")==0)
 			{
+				// goto end;
 				exit(0);
 			}
-
+			else if(command.compare("pr")==0)
+			{
+				print_userList();
+			}
 		}	
 	}
 

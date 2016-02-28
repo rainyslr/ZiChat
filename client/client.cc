@@ -25,6 +25,7 @@ void *Recv(void* para)
 	int ret_val;
 	while(1)
 	{
+		memset(buffer,0,1024);
 		ret_val = read(cfd,buffer,1024);
 		if(ret_val == 0)
 		{
@@ -36,13 +37,32 @@ void *Recv(void* para)
 			std::cout << "read data fail !" << std::endl;
 			return NULL;
 		}
-		buffer[ret_val]='\0';   
-		//cout_mutex.lock();
-		std::cout << "recv data is:" << buffer << std::endl;
+		Packet* pkt_ptr = (Packet*)buffer;
+		int type = pkt_ptr->m_type;
+		switch(type)
+		{
+			case REGISTER__RESULT_PKT:
+			{
+				RegisterResultType ret = *(RegisterResultType*) (buffer + HEADER_LEN);
+				printf("%d\n", ret);
+				switch(ret)
+				{
+					case SUCCEED:
+						PString("register suceed");
+						break;
+					case USERNAME_CONFLICT:
+						PString("username conflict,enter register command again");
+						break;
+					default:
+						PString("unkwon error,enter register command again");
+				}
+			}
+			break;
+			default:
+				PString("receive unkwon pkt");
+		}
 
 	}
-
-
 	return NULL;  
 }
 
@@ -99,7 +119,7 @@ int main()
 				// goto end;
 				exit(0);
 			}
-			else if(cur_cmd.m_cmd[0].compare("register")==0)
+			else if(cur_cmd.m_cmd[0].compare("reg")==0)
 			{
 				UserInfo u1(cur_cmd.m_cmd[1],cur_cmd.m_cmd[2]);
 				Packet pkt(REGISTER_PKT,&u1);

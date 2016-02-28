@@ -11,7 +11,9 @@
 
 enum PacketType{  
 	REGISTER_PKT = 0,
-	CLIENT_EXIT_PKT
+	REGISTER__RESULT_PKT,
+	CLIENT_EXIT_PKT,
+	ERROR_PKT
 };
 
 struct Packet
@@ -30,6 +32,17 @@ struct UserInfo
 	char m_password[MAX_PASSWORD_LEN]; 
 	UserInfo(const std::string& name,const std::string& password);
 	UserInfo(const char* name_ptr,const char* password_ptr);
+};
+
+enum RegisterResultType
+{
+	SUCCEED,
+	USERNAME_CONFLICT
+};
+
+struct RegisterResult
+{
+	RegisterResultType m_resultType;
 };
 
 int SendPkt(int soc,const Packet& pkt);

@@ -8,16 +8,24 @@ Packet::Packet(PacketType type,void* payload)
 	switch(type)
 	{
 		case REGISTER_PKT:
-			{
-				m_totalLen = HEADER_LEN + sizeof(UserInfo);
-				memcpy(m_buff,payload,sizeof(UserInfo));
-				break;
-			}
+		{
+			m_totalLen = HEADER_LEN + sizeof(UserInfo);
+			memcpy(m_buff,payload,sizeof(UserInfo));
+			break;
+		}
+		case REGISTER__RESULT_PKT:
+		{
+			RegisterResult* resu = (RegisterResult*) payload;
+			m_totalLen = HEADER_LEN + sizeof(RegisterResult);
+			memcpy(m_buff,payload,sizeof(RegisterResult));
+			break;
+		}
 		default:
-			{
-				m_totalLen = HEADER_LEN + 0;
-				break;
-			}
+		{
+			m_type = ERROR_PKT;
+			m_totalLen = HEADER_LEN + 0;
+			break;
+		}
 
 	}
 

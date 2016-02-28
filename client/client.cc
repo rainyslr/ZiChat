@@ -44,7 +44,6 @@ void *Recv(void* para)
 			case REGISTER__RESULT_PKT:
 			{
 				RegisterResultType ret = *(RegisterResultType*) (buffer + HEADER_LEN);
-				printf("%d\n", ret);
 				switch(ret)
 				{
 					case SUCCEED:
